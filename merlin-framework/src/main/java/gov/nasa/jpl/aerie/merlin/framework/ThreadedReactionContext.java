@@ -18,6 +18,8 @@ final class ThreadedReactionContext implements Context {
   private Scheduler scheduler;
   private final Consumer<Object> readLogger;
 
+  public static final boolean CHECKPOINT = true;
+
   public ThreadedReactionContext(
       final Scoped<Context> rootContext,
       final Scheduler scheduler,
@@ -38,7 +40,8 @@ final class ThreadedReactionContext implements Context {
   @Override
   public <State> State ask(final CellId<State> cellId) {
     final State state = this.scheduler.get(cellId);
-    this.readLogger.accept(state);
+    if(CHECKPOINT)
+      this.readLogger.accept(state);
     return state;
   }
 

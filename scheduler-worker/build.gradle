@@ -73,6 +73,7 @@ test {
   dependsOn nodeSetup
   dependsOn assembleSchedulingDSLCompiler
   useJUnitPlatform()
+  maxHeapSize = "20g"
 
   testLogging {
       exceptionFormat 'full'

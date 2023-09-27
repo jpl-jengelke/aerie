@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
@@ -30,7 +31,16 @@ import java.util.function.Function;
 
 import static gov.nasa.jpl.aerie.merlin.protocol.types.Duration.min;
 
+import static gov.nasa.jpl.aerie.merlin.protocol.types.Duration.HOURS;
+import static gov.nasa.jpl.aerie.merlin.protocol.types.Duration.ZERO;
+
 public final class SimulationDriver {
+
+  public static final int MAX_CHECKPOINT = 100000000;
+  public static final boolean CHECKPOINT = false;
+  public static final Duration PERIOD_CHECKPOINT = Duration.of(7*24, HOURS);
+  public static final Duration PERIOD_MEMORY_MEASURE = Duration.of(7*24, HOURS);
+
   public static List<CachedSimulationEngine> cachedEngines = new ArrayList<>(); // TODO cache relevant prefix of plan, sim config, model id
   // TODO correctly handle relatively scheduled activities
 
@@ -83,6 +93,13 @@ public final class SimulationDriver {
       final Duration planDuration,
       final Consumer<Duration> simulationExtentConsumer
   ) {
+    var sinceLastCheckpoint = ZERO;
+    var sinceLastMemoryPrint = ZERO;
+    var realTimeElapsed = System.nanoTime();
+    final List<SimulationEngine> engines = new ArrayList<>();
+    final List<Long> times = new ArrayList<>();
+    final TreeMap<Duration, Long> memory = new TreeMap<>();
+
     try (final var engine = new SimulationEngine()) {
       /* The top-level simulation timeline. */
       var timeline = new TemporalEventSource();
@@ -144,6 +161,28 @@ public final class SimulationDriver {
 
           // Increment real time, if necessary.
           final var delta = batch.offsetFromStart().minus(elapsedTime);
+          sinceLastMemoryPrint = sinceLastMemoryPrint.plus(delta);
+          sinceLastCheckpoint = sinceLastCheckpoint.plus(delta);
+          if(sinceLastMemoryPrint.longerThan(PERIOD_MEMORY_MEASURE)){
+            final var time = (System.nanoTime() - realTimeElapsed);
+            System.out.println("Real time elapsed since last " + time);
+            realTimeElapsed = System.nanoTime();
+            final var memoryUsage = ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/1024/1024);
+            System.out.println("Free memory at time " + elapsedTime + " :" + memoryUsage + "Mo");
+            sinceLastMemoryPrint = ZERO;
+            memory.put(elapsedTime, memoryUsage);
+            times.add(time);
+          }
+          if(CHECKPOINT && sinceLastCheckpoint.longerThan(PERIOD_CHECKPOINT)){
+            System.out.println("Checkpointing at time " + elapsedTime + " #" + elapsedTime.dividedBy(PERIOD_CHECKPOINT));
+            sinceLastCheckpoint = ZERO;
+            if(engines.size() >= MAX_CHECKPOINT){
+              engines.remove(0);
+            }
+            engines.add(engine.duplicate());
+          }
+
+
           elapsedTime = batch.offsetFromStart();
           timeline.add(delta);
           // TODO: Advance a dense time counter so that future tasks are strictly ordered relative to these,
@@ -160,10 +199,19 @@ public final class SimulationDriver {
           timeline.add(commit);
         }
       } catch (Throwable ex) {
+        System.out.println("Memory");
+        memory.forEach((time, mem)-> System.out.println(mem));
+        System.out.println("Time");
+        times.forEach(System.out::println);
         throw new SimulationException(elapsedTime, simulationStartTime, ex);
       }
 
       final var topics = missionModel.getTopics();
+      System.out.println("ending sim");
+      System.out.println("Memory");
+      memory.forEach((time, mem)-> System.out.println(mem));
+      System.out.println("Time");
+      times.forEach(System.out::println);
       return SimulationEngine.computeResults(engine, simulationStartTime, elapsedTime, activityTopic, timeline, topics);
     }
   }
