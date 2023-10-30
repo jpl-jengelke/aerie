@@ -11,7 +11,6 @@ import gov.nasa.jpl.aerie.scheduler.constraints.timeexpressions.TimeAnchor;
 import gov.nasa.jpl.aerie.scheduler.goals.CardinalityGoal;
 import gov.nasa.jpl.aerie.scheduler.goals.ChildCustody;
 import gov.nasa.jpl.aerie.scheduler.goals.CoexistenceGoal;
-import gov.nasa.jpl.aerie.scheduler.goals.ProceduralCreationGoal;
 import gov.nasa.jpl.aerie.scheduler.goals.RecurrenceGoal;
 import gov.nasa.jpl.aerie.scheduler.model.SchedulingActivityDirective;
 import gov.nasa.jpl.aerie.scheduler.model.PlanInMemory;
@@ -130,47 +129,6 @@ public class PrioritySolverTest {
     assertTrue(plan.isPresent());
     assertSetEquality(plan.get().getActivitiesByTime(), expectedPlan.getActivitiesByTime());
     assertEquals(1, problem.getSimulationFacade().countSimulationRestarts());
-  }
-
-  @Test
-  public void getNextSolution_proceduralGoalCreatesActivities() {
-    final var problem = makeTestMissionAB();
-    final var expectedPlan = makePlanA012(problem);
-    final var goal = new ProceduralCreationGoal.Builder()
-        .named("g0")
-        .generateWith((plan) -> expectedPlan.getActivitiesByTime())
-        .forAllTimeIn(new WindowsWrapperExpression(new Windows(false).set(h.getHor(), true)))
-        .withinPlanHorizon(h)
-        .build();
-    problem.setGoals(List.of(goal));
-    final var solver = makeProblemSolver(problem);
-
-    final var plan = solver.getNextSolution().orElseThrow();
-
-    assertSetEquality(plan.getActivitiesByTime(), expectedPlan.getActivitiesByTime());
-    assertEquals(4, problem.getSimulationFacade().countSimulationRestarts());
-  }
-
-  @Test
-  public void getNextSolution_proceduralGoalAttachesActivitiesToEvaluation() {
-    final var problem = makeTestMissionAB();
-    final var expectedPlan = makePlanA012(problem);
-    final var goal = new ProceduralCreationGoal.Builder()
-        .named("g0")
-        .generateWith((plan) -> expectedPlan.getActivitiesByTime())
-        .forAllTimeIn(new WindowsWrapperExpression(new Windows(false).set(h.getHor(), true)))
-        .withinPlanHorizon(h)
-        .build();
-    problem.setGoals(List.of(goal));
-    final var solver = makeProblemSolver(problem);
-
-    final var plan = solver.getNextSolution().orElseThrow();
-
-    assertNotNull(plan.getEvaluation());
-    final var eval = plan.getEvaluation().forGoal(goal);
-    assertNotNull(eval);
-    assertSetEquality(eval.getAssociatedActivities().stream().toList(), expectedPlan.getActivitiesByTime());
-    assertEquals(4, problem.getSimulationFacade().countSimulationRestarts());
   }
 
   @Test

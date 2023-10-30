@@ -12,8 +12,6 @@ import gov.nasa.jpl.aerie.scheduler.constraints.timeexpressions.TimeExpressionCo
 import gov.nasa.jpl.aerie.scheduler.goals.CoexistenceGoal;
 import gov.nasa.jpl.aerie.scheduler.constraints.resources.StateQueryParam;
 import gov.nasa.jpl.aerie.scheduler.goals.ChildCustody;
-import gov.nasa.jpl.aerie.scheduler.goals.ProceduralCreationGoal;
-import gov.nasa.jpl.aerie.scheduler.model.Plan;
 import gov.nasa.jpl.aerie.scheduler.model.PlanInMemory;
 import gov.nasa.jpl.aerie.scheduler.model.PlanningHorizon;
 import gov.nasa.jpl.aerie.scheduler.model.Problem;
@@ -25,10 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import static gov.nasa.jpl.aerie.constraints.time.Interval.Inclusivity.Exclusive;
 import static gov.nasa.jpl.aerie.constraints.time.Interval.Inclusivity.Inclusive;
@@ -284,90 +280,6 @@ public class SimulationFacadeTest {
     final var solver = new PrioritySolver(this.problem);
     final var plan = solver.getNextSolution().orElseThrow();
     assertTrue(TestUtility.containsActivity(plan, t2, t2, actTypePeel));
-    assertEquals(2, problem.getSimulationFacade().countSimulationRestarts());
-  }
-
-  @Test
-  public void testProceduralGoalWithResourceConstraint() {
-    problem.setInitialPlan(makeTestPlanP0B1());
-
-    final var constraint = new And(
-        new LessThanOrEqual(new RealResource("/peel"), new RealValue(3.0)),
-        new LessThanOrEqual(new RealResource("/fruit"), new RealValue(2.9))
-    );
-
-    final var actTypePeel = problem.getActivityType("PeelBanana");
-
-    SchedulingActivityDirective act1 = SchedulingActivityDirective.of(actTypePeel,
-                                                 t0, Duration.ZERO, null, true);
-
-    SchedulingActivityDirective act2 = SchedulingActivityDirective.of(actTypePeel,
-                                                 t2, Duration.ZERO, null, true);
-
-    //create an "external tool" that insists on a few fixed activities
-    final var externalActs = java.util.List.of(
-        act1,
-        act2
-    );
-    final Function<Plan, Collection<SchedulingActivityDirective>> fixedGenerator
-        = (p) -> externalActs;
-
-    final var proceduralGoalWithConstraints = new ProceduralCreationGoal.Builder()
-        .forAllTimeIn(new WindowsWrapperExpression(new Windows(false).set(horizon.getHor(), true)))
-        .attachStateConstraint(constraint)
-        .generateWith(fixedGenerator)
-        .owned(ChildCustody.Jointly)
-        .withinPlanHorizon(horizon)
-        .build();
-
-    problem.setGoals(List.of(proceduralGoalWithConstraints));
-    final var solver = new PrioritySolver(this.problem);
-    final var plan = solver.getNextSolution().orElseThrow();
-
-    assertTrue(TestUtility.containsExactlyActivity(plan, act2));
-    assertTrue(TestUtility.doesNotContainActivity(plan, act1));
-    assertEquals(2, problem.getSimulationFacade().countSimulationRestarts());
-  }
-
-  @Test
-  public void testActivityTypeWithResourceConstraint() {
-    problem.setInitialPlan(makeTestPlanP0B1());
-
-    final var constraint = new And(
-        new LessThanOrEqual(new RealResource("/peel"), new RealValue(3.0)),
-        new LessThanOrEqual(new RealResource("/fruit"), new RealValue(2.9))
-    );
-
-    final var actTypePeel = problem.getActivityType("PeelBanana");
-    actTypePeel.setResourceConstraint(constraint);
-
-    SchedulingActivityDirective act1 = SchedulingActivityDirective.of(actTypePeel,
-                                                 t0, Duration.ZERO, null, true);
-
-    SchedulingActivityDirective act2 = SchedulingActivityDirective.of(actTypePeel,
-                                                 t2, Duration.ZERO, null, true);
-
-    //create an "external tool" that insists on a few fixed activities
-    final var externalActs = java.util.List.of(
-        act1,
-        act2
-    );
-
-    final Function<Plan, Collection<SchedulingActivityDirective>> fixedGenerator
-        = (p) -> externalActs;
-
-    final var proceduralgoalwithoutconstraints = new ProceduralCreationGoal.Builder()
-        .forAllTimeIn(new WindowsWrapperExpression(new Windows(false).set(horizon.getHor(), true)))
-        .generateWith(fixedGenerator)
-        .owned(ChildCustody.Jointly)
-        .withinPlanHorizon(horizon)
-        .build();
-
-    problem.setGoals(List.of(proceduralgoalwithoutconstraints));
-    final var solver = new PrioritySolver(problem);
-    final var plan = solver.getNextSolution().orElseThrow();
-    assertTrue(TestUtility.containsExactlyActivity(plan, act2));
-    assertTrue(TestUtility.doesNotContainActivity(plan, act1));
     assertEquals(2, problem.getSimulationFacade().countSimulationRestarts());
   }
 }

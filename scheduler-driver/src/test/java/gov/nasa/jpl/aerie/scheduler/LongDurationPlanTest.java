@@ -1,9 +1,6 @@
 package gov.nasa.jpl.aerie.scheduler;
 
-import gov.nasa.jpl.aerie.constraints.time.Windows;
-import gov.nasa.jpl.aerie.constraints.tree.WindowsWrapperExpression;
 import gov.nasa.jpl.aerie.merlin.protocol.types.Duration;
-import gov.nasa.jpl.aerie.scheduler.goals.ProceduralCreationGoal;
 import gov.nasa.jpl.aerie.scheduler.model.SchedulingActivityDirective;
 import gov.nasa.jpl.aerie.scheduler.model.PlanInMemory;
 import gov.nasa.jpl.aerie.scheduler.model.PlanningHorizon;
@@ -11,8 +8,6 @@ import gov.nasa.jpl.aerie.scheduler.model.Problem;
 import gov.nasa.jpl.aerie.scheduler.simulation.SimulationFacade;
 import gov.nasa.jpl.aerie.scheduler.solver.PrioritySolver;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 import static gov.nasa.jpl.aerie.scheduler.TestUtility.assertSetEquality;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,24 +56,5 @@ public class LongDurationPlanTest {
     assertTrue(plan.isPresent());
     assertSetEquality(plan.get().getActivitiesByTime(), expectedPlan.getActivitiesByTime());
     assertEquals(1, problem.getSimulationFacade().countSimulationRestarts());
-  }
-
-  @Test
-  public void getNextSolution_proceduralGoalCreatesActivities() {
-    final var problem = makeTestMissionAB();
-    final var expectedPlan = makePlanA012(problem);
-    final var goal = new ProceduralCreationGoal.Builder()
-        .named("g0")
-        .generateWith((plan) -> expectedPlan.getActivitiesByTime())
-        .forAllTimeIn(new WindowsWrapperExpression(new Windows(false).set(h.getHor(), true)))
-        .withinPlanHorizon(h)
-        .build();
-    problem.setGoals(List.of(goal));
-    final var solver = makeProblemSolver(problem);
-
-    final var plan = solver.getNextSolution().orElseThrow();
-
-    assertSetEquality(plan.getActivitiesByTime(), expectedPlan.getActivitiesByTime());
-    assertEquals(2, problem.getSimulationFacade().countSimulationRestarts());
   }
 }
