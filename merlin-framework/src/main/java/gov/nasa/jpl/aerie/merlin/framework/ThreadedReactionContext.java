@@ -40,8 +40,7 @@ final class ThreadedReactionContext implements Context {
   @Override
   public <State> State ask(final CellId<State> cellId) {
     final State state = this.scheduler.get(cellId);
-    if(CHECKPOINT)
-      this.readLogger.accept(state);
+    this.readLogger.accept(state);
     return state;
   }
 
