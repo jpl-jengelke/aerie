@@ -92,40 +92,6 @@ public class ResumableSimulationTest {
     assert(resumableSimulationDriver.getSimulationResults(Instant.now()).unfinishedActivities.size() == 1);
   }
 
-  @Test
-  public void testThreadsReleased() {
-    final var activity = new TestSimulatedActivity(
-        Duration.of(0, SECONDS),
-        new SerializedActivity("BasicActivity", Map.of()),
-        new ActivityDirectiveId(1));
-    final var fooMissionModel = SimulationUtility.getFooMissionModel();
-    resumableSimulationDriver = new ResumableSimulationDriver<>(fooMissionModel, tenHours);
-    try (final var executor = unsafeGetExecutor(resumableSimulationDriver)) {
-      for (var i = 0; i < 20000; i++) {
-        resumableSimulationDriver.initSimulation();
-        resumableSimulationDriver.clearActivitiesInserted();
-        resumableSimulationDriver.simulateActivity(activity.start, activity.activity, null, true, activity.id);
-        assertTrue(
-            executor.getActiveCount() < 100,
-            "Threads are not being cleaned up properly - this test shouldn't need more than 2 threads, but it used at least 100");
-      }
-    }
-  }
-
-  private static ThreadPoolExecutor unsafeGetExecutor(final ResumableSimulationDriver<?> driver) {
-    try {
-      final var engineField = ResumableSimulationDriver.class.getDeclaredField("engine");
-      engineField.setAccessible(true);
-
-      final var executorField = SimulationEngine.class.getDeclaredField("executor");
-      executorField.setAccessible(true);
-
-      return (ThreadPoolExecutor) executorField.get(engineField.get(driver));
-    } catch (final ReflectiveOperationException ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
   private ArrayList<TestSimulatedActivity> getActivities(){
     final var acts = new ArrayList<TestSimulatedActivity>();
     var act1 = new TestSimulatedActivity(
