@@ -38,7 +38,11 @@ import gov.nasa.jpl.aerie.merlin.driver.MissionModel;
 import gov.nasa.jpl.aerie.merlin.driver.MissionModelLoader;
 import gov.nasa.jpl.aerie.merlin.driver.SerializedActivity;
 import gov.nasa.jpl.aerie.merlin.driver.SimulationDriver;
+import gov.nasa.jpl.aerie.merlin.driver.SimulationResults;
 import gov.nasa.jpl.aerie.merlin.driver.engine.SimulationEngine;
+import gov.nasa.jpl.aerie.merlin.driver.timeline.LiveCells;
+import gov.nasa.jpl.aerie.merlin.driver.timeline.TemporalEventSource;
+import gov.nasa.jpl.aerie.merlin.protocol.driver.Topic;
 import gov.nasa.jpl.aerie.merlin.protocol.model.DirectiveType;
 import gov.nasa.jpl.aerie.merlin.protocol.model.InputType.Parameter;
 import gov.nasa.jpl.aerie.merlin.protocol.types.Duration;
@@ -3349,81 +3353,5 @@ public class SchedulingIntegrationTests {
     final var vecs = insertedFoo.serializedActivity().getArguments().get("vecs").asList();
     assertTrue(vecs.isPresent());
     assertEquals(2, vecs.get().size());
-  }
-
-public record JsonPlan(PlanningHorizon planningHorizon, HashMap<ActivityDirectiveId, ActivityDirective> plan, MissionModel<?> missionModel){}
-
-  @Test
-  public void testCheckpoint()
-  throws MissionModelLoader.MissionModelLoadException, FileNotFoundException, InvalidJsonException,
-         InstantiationException
-  {
-    final SchedulingIntegrationTests.MissionModelDescription
-        CLIPPER = new SchedulingIntegrationTests.MissionModelDescription(
-        "eurc_30_oct.jar",
-        Map.of(),
-        Path.of(System.getenv("AERIE_ROOT"), "scheduler-worker", "src", "test", "resources"),
-        null
-    );
-    final var initialPlan = loadPlanFromJson(
-        Path.of(System.getenv("AERIE_ROOT"), "scheduler-worker", "src", "test", "resources",
-                "cruise-rap-dev-10-30.json").toString(),
-        CLIPPER);
-
-    final var simEngine1 = new SimulationEngine();
-    final var simulationResults = SimulationDriver.simulate(
-        initialPlan.missionModel(),
-        initialPlan.plan(),
-        initialPlan.planningHorizon().getStartInstant(),
-        initialPlan.planningHorizon().getEndAerie(),
-        initialPlan.planningHorizon().getStartInstant(),
-        initialPlan.planningHorizon().getEndAerie());
-  }
-
-  public JsonPlan loadPlanFromJson(final String path, final MissionModelDescription missionModelDescription)
-  throws InvalidJsonException, MissionModelLoader.MissionModelLoadException, InstantiationException,
-         FileNotFoundException
-  {
-
-    final File jsonInputFile = new File(path);
-    final InputStream is = new FileInputStream(jsonInputFile);
-    final JsonReader reader = Json.createReader(is);
-    final JsonObject empObj = reader.readObject();
-    final var planningHorizonStart = Instant.parse(empObj.getString("start_time"));
-    final var planningHorizonEnd = Instant.parse(empObj.getString("end_time"));
-    final var planningHorizon = new PlanningHorizon(planningHorizonStart, planningHorizonEnd);
-    final var activityDirectives = empObj.getJsonArray("activities");
-
-    final var missionModel = MissionModelLoader.loadMissionModel(
-        planningHorizonStart,
-        SerializedValue.of(missionModelDescription.config),
-        missionModelDescription.libPath().resolve(missionModelDescription.name),
-        "",
-        "");
-
-    final var plan = new HashMap<ActivityDirectiveId, ActivityDirective>();
-    for (int i = 0; i < activityDirectives.size(); i++) {
-      final var jsonActivity = activityDirectives.getJsonObject(i);
-      final var type = activityDirectives.getJsonObject(i).getString("type");
-      final var start = jsonActivity.getString("start_offset");
-      final Integer anchorId = jsonActivity.isNull("anchor_id") ? null : jsonActivity.getInt("anchor_id");
-      final boolean anchoredToStart = jsonActivity.getBoolean("anchored_to_start");
-      final var arguments = jsonActivity.getJsonObject("arguments");
-      final var deserializedArguments = BasicParsers
-          .mapP(serializedValueP)
-          .parse(arguments)
-          .getSuccessOrThrow((reason) -> new InvalidJsonException(new InvalidEntityException(List.of(reason))));
-      final var effectiveArguments = missionModel.getDirectiveTypes().directiveTypes().get(type).getInputType()
-                                       .getEffectiveArguments(deserializedArguments);
-      final var merlinActivity = new ActivityDirective(
-          durationFromPGInterval(start),
-          type,
-          effectiveArguments,
-          (anchorId != null) ? new ActivityDirectiveId(anchorId) : null,
-          anchoredToStart);
-      final var actPK = new ActivityDirectiveId(jsonActivity.getJsonNumber("id").longValue());
-      plan.put(actPK, merlinActivity);
-    }
-    return new JsonPlan(planningHorizon, plan, missionModel);
   }
 }
