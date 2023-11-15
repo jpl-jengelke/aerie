@@ -142,6 +142,23 @@ public final class SimulationDriver {
 
       final long now = System.nanoTime();
 
+      final double thresholdSeconds = 0.1;
+      final var resourceStats = engine.resourceUpdateStats.entrySet();
+      final var hotResourceStats = resourceStats.stream()
+        .filter(e -> e.getValue().totalSeconds >= thresholdSeconds)
+        .sorted((a, b) -> Double.compare(b.getValue().totalSeconds, a.getValue().totalSeconds))
+        .toList();
+      final double totSec = resourceStats.stream().mapToDouble(e -> e.getValue().totalSeconds).sum();
+      final double hotSec = hotResourceStats.stream().mapToDouble(e -> e.getValue().totalSeconds).sum();
+      logger.debug("Total {}s updating {} resources, {}s for hot {} (at least {}s each), {}s for remaining {}",
+                   totSec, resourceStats.size(), hotSec, hotResourceStats.size(), thresholdSeconds,
+                   totSec - hotSec, resourceStats.size() - hotResourceStats.size());
+      for (final var stats : hotResourceStats) {
+        logger.debug("Hot resource {}: {} updates, {}s total time, {}s average per update",
+                     stats.getKey().id(), stats.getValue().totalUpdates, stats.getValue().totalSeconds,
+                     stats.getValue().totalSeconds / stats.getValue().totalUpdates);
+      }
+
       logger.info("Finished simulation of {} activity directives, " +
                   "planning horizon {} to {}, simulation horizon {} to {}, total wall-clock time {}s",
                   schedule.size(), planStartTime, planStartTime.plusMillis(planDuration.in(Duration.MILLISECONDS)),
