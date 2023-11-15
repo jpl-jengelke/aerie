@@ -15,8 +15,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.jar.JarFile;
+import java.util.Map;
+import java.util.HashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class MissionModelLoader {
+
+    private static final Logger logger = LoggerFactory.getLogger(MissionModelLoader.class);
+
     public static ModelType<?, ?> loadModelType(final Path path, final String name, final String version)
     throws MissionModelLoadException
     {
@@ -58,6 +66,9 @@ public final class MissionModelLoader {
         }
     }
 
+    //TODO: bound memory usage
+    private static Map<URL, URLClassLoader> classLoaderCache = new HashMap<>();
+
     public static MerlinPlugin loadMissionModelProvider(final Path path, final String name, final String version)
     throws MissionModelLoadException
     {
@@ -66,7 +77,16 @@ public final class MissionModelLoader {
         final var className = getImplementingClassName(path, name, version);
 
         // Construct a ClassLoader with access to classes in the mission model location.
-        final var classLoader = new URLClassLoader(new URL[] {missionModelPathToUrl(path)});
+        final var url = missionModelPathToUrl(path);
+        URLClassLoader classLoader = null;
+        if (classLoaderCache.containsKey(url)) {
+          logger.debug("Reusing classloader for {}", url);
+          classLoader = classLoaderCache.get(url);
+        } else {
+          logger.debug("Creating classloader for {}", url);
+          classLoader = new URLClassLoader(new URL[] {url});
+          classLoaderCache.put(url, classLoader);
+        }
 
         try {
             final var pluginClass$ = classLoader.loadClass(className);
