@@ -10,6 +10,8 @@ import gov.nasa.jpl.aerie.merlin.protocol.types.InstantiationException;
 import gov.nasa.jpl.aerie.merlin.protocol.types.TaskStatus;
 import gov.nasa.jpl.aerie.merlin.protocol.types.Unit;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -19,6 +21,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public final class SimulationDriver {
+
+  private static final Logger logger = LoggerFactory.getLogger(SimulationDriver.class);
+
   public static <Model>
   SimulationResults simulate(
       final MissionModel<Model> missionModel,
@@ -42,6 +47,13 @@ public final class SimulationDriver {
       final Duration planDuration,
       final Consumer<Duration> simulationExtentConsumer
   ) {
+
+    final long start = System.nanoTime();
+
+    logger.info("Starting simulation of {} activity directives, planning horizon {} to {}, simulation horizon {} to {}",
+                schedule.size(), planStartTime, planStartTime.plusMillis(planDuration.in(Duration.MILLISECONDS)),
+                simulationStartTime, simulationStartTime.plusMillis(simulationDuration.in(Duration.MILLISECONDS)));
+
     try (final var engine = new SimulationEngine()) {
       /* The top-level simulation timeline. */
       var timeline = new TemporalEventSource();
@@ -122,8 +134,21 @@ public final class SimulationDriver {
         throw new SimulationException(elapsedTime, simulationStartTime, ex);
       }
 
+      logger.debug("Computing simulation results");
+
       final var topics = missionModel.getTopics();
-      return SimulationEngine.computeResults(engine, simulationStartTime, elapsedTime, activityTopic, timeline, topics);
+      final var results =
+        SimulationEngine.computeResults(engine, simulationStartTime, elapsedTime, activityTopic, timeline, topics);
+
+      final long now = System.nanoTime();
+
+      logger.info("Finished simulation of {} activity directives, " +
+                  "planning horizon {} to {}, simulation horizon {} to {}, total wall-clock time {}s",
+                  schedule.size(), planStartTime, planStartTime.plusMillis(planDuration.in(Duration.MILLISECONDS)),
+                  simulationStartTime, simulationStartTime.plusMillis(simulationDuration.in(Duration.MILLISECONDS)),
+                  (now - start) * 1e-9);
+
+      return results;
     }
   }
 
