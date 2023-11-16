@@ -23,8 +23,8 @@ data class Interval(
     fun moreRestrictiveThan(other: Inclusivity): Boolean = this == Exclusive && other == Inclusive
   }
 
-  fun includesStart(): Boolean = startInclusivity == Inclusivity.Inclusive
-  fun includesEnd(): Boolean = endInclusivity == Inclusivity.Inclusive
+  fun includesStart() = startInclusivity == Inclusivity.Inclusive
+  fun includesEnd() = endInclusivity == Inclusivity.Inclusive
 
   val isEmpty: Boolean
     get() {
@@ -37,17 +37,17 @@ data class Interval(
     // Use this instead of `.duration().isZero()` to avoid overflow on long intervals.
     get() = (includesStart() && includesEnd() && (start === end))
 
-  fun shiftBy(duration: Duration): Interval = between(
+  fun shiftBy(duration: Duration) = between(
       start.saturatingPlus(duration),
       end.saturatingPlus(duration),
       startInclusivity,
       endInclusivity
   )
 
-  fun duration(): Duration = if (isEmpty) Duration.ZERO else end.minus(start)
+  fun duration() = if (isEmpty) Duration.ZERO else end.minus(start)
 
-  fun isStrictlyAfter(x: Interval): Boolean = compareStartToEnd(x) > 0
-  fun isStrictlyBefore(x: Interval): Boolean = compareEndToStart(x) < 0
+  fun isStrictlyAfter(x: Interval) = compareStartToEnd(x) > 0
+  fun isStrictlyBefore(x: Interval) = compareEndToStart(x) < 0
 
   fun compareStarts(other: Interval): Int {
     val timeComparison: Int = start.compareTo(other.start)
@@ -64,7 +64,7 @@ data class Interval(
       else -1
   }
 
-  fun compareStartToEnd(other: Interval): Int = -other.compareEndToStart(this)
+  fun compareStartToEnd(other: Interval) = -other.compareEndToStart(this)
 
   /**
    * Compares the end of x to the start of y.
@@ -115,16 +115,16 @@ data class Interval(
     return 0
   }
 
-  fun hasSameStart(other: Interval): Boolean = compareStartToStart(other) == 0
-  fun hasSameEnd(other: Interval): Boolean = compareEndToEnd(other) == 0
+  fun hasSameStart(other: Interval) = compareStartToStart(other) == 0
+  fun hasSameEnd(other: Interval) = compareEndToEnd(other) == 0
 
-  fun meets(other: Interval): Boolean = (this.end.isEqualTo(other.start)) && (this.endInclusivity != other.startInclusivity)
-  fun metBy(other: Interval): Boolean = other.meets(this)
+  fun meets(other: Interval) = (this.end.isEqualTo(other.start)) && (this.endInclusivity != other.startInclusivity)
+  fun metBy(other: Interval) = other.meets(this)
 
-  operator fun contains(d: Duration): Boolean = !intersection(at(d)).isEmpty
-  operator fun contains(x: Interval): Boolean = intersection(x) == x
+  operator fun contains(d: Duration) = !intersection(at(d)).isEmpty
+  operator fun contains(x: Interval) = intersection(x) == x
 
-  fun adjacent(x: Interval): Boolean = metBy(x) || meets(x)
+  fun adjacent(x: Interval) = metBy(x) || meets(x)
 
   fun intersection(other: Interval): Interval {
     val start: Duration
@@ -209,20 +209,20 @@ data class Interval(
         end: Duration,
         startInclusivity: Inclusivity = Inclusivity.Inclusive,
         endInclusivity: Inclusivity = startInclusivity
-    ): Interval = if (end.shorterThan(start)) EMPTY else Interval(start, end, startInclusivity, endInclusivity)
+    ) = if (end.shorterThan(start)) EMPTY else Interval(start, end, startInclusivity, endInclusivity)
     @JvmStatic fun between(
         start: Long,
         end: Long,
         startInclusivity: Inclusivity = Inclusivity.Inclusive,
         endInclusivity: Inclusivity = startInclusivity,
         unit: Duration
-    ): Interval = between(Duration.of(start, unit), Duration.of(end, unit), startInclusivity, endInclusivity)
+    ) = between(Duration.of(start, unit), Duration.of(end, unit), startInclusivity, endInclusivity)
 
-    @JvmStatic fun betweenClosedOpen(start: Duration, end: Duration): Interval = between(start, end, Inclusivity.Inclusive, Inclusivity.Exclusive)
+    @JvmStatic fun betweenClosedOpen(start: Duration, end: Duration) = between(start, end, Inclusivity.Inclusive, Inclusivity.Exclusive)
 
-    @JvmStatic fun at(point: Duration): Interval = between(point, point)
-    @JvmStatic fun at(quantity: Long, unit: Duration): Interval = at(Duration.of(quantity, unit))
+    @JvmStatic fun at(point: Duration) = between(point, point)
+    @JvmStatic fun at(quantity: Long, unit: Duration) = at(Duration.of(quantity, unit))
 
-    @JvmStatic val EMPTY: Interval = Interval(Duration.ZERO, Duration.ZERO.minus(Duration.EPSILON))
+    @JvmStatic val EMPTY = Interval(Duration.ZERO, Duration.ZERO.minus(Duration.EPSILON))
   }
 }
