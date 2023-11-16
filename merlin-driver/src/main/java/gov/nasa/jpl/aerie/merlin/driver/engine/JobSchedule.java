@@ -17,8 +17,7 @@ public final class JobSchedule<JobRef, TimeRef extends SchedulingInstant> {
 
   /** A time-ordered queue of all tasks whose resumption time is concretely known. */
   @DerivedFrom("scheduledJobs")
-  private final FastDeletePriorityQueue<Pair<TimeRef, JobRef>> queue =
-    new FastDeletePriorityQueue<>(Comparator.comparing(Pair::getLeft));
+  private final PriorityQueue<Pair<TimeRef, JobRef>> queue = new PriorityQueue<>(Comparator.comparing(Pair::getLeft));
 
   public void schedule(final JobRef job, final TimeRef time) {
     final var oldTime = this.scheduledJobs.put(job, time);
