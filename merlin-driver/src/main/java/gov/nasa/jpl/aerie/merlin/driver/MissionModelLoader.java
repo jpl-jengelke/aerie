@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.jar.JarFile;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,8 +67,7 @@ public final class MissionModelLoader {
         }
     }
 
-    //TODO: bound memory usage
-    private static Map<URL, URLClassLoader> classLoaderCache = new HashMap<>();
+    private static URLClassLoader lastClassLoader;
 
     public static MerlinPlugin loadMissionModelProvider(final Path path, final String name, final String version)
     throws MissionModelLoadException
@@ -78,14 +78,17 @@ public final class MissionModelLoader {
 
         // Construct a ClassLoader with access to classes in the mission model location.
         final var url = missionModelPathToUrl(path);
+
+        // Important optimization: if the last time we were called was for the same mission model then reuse the same
+        // classloader.  In particular this ensures that any static caches (e.g. for memoization optimizations) in the
+        // mission model are not reset across simulation runs.
         URLClassLoader classLoader = null;
-        if (classLoaderCache.containsKey(url)) {
+        if (lastClassLoader != null && Arrays.stream(lastClassLoader.getURLs()).anyMatch(u -> u.equals(url))) {
           logger.debug("Reusing classloader for {}", url);
-          classLoader = classLoaderCache.get(url);
+          classLoader = lastClassLoader;
         } else {
           logger.debug("Creating classloader for {}", url);
-          classLoader = new URLClassLoader(new URL[] {url});
-          classLoaderCache.put(url, classLoader);
+          classLoader = lastClassLoader = new URLClassLoader(new URL[] {url});
         }
 
         try {
