@@ -1,5 +1,7 @@
-package gov.nasa.jpl.aerie.timeline
+package gov.nasa.jpl.aerie.timeline.types
 
+import gov.nasa.jpl.aerie.timeline.Segment
+import gov.nasa.jpl.aerie.timeline.Timeline
 import gov.nasa.jpl.aerie.timeline.ops.DiscreteOps
 import gov.nasa.jpl.aerie.timeline.ops.ProfileOps
 import gov.nasa.jpl.aerie.timeline.ops.TimelineOps

@@ -2,6 +2,9 @@ package gov.nasa.jpl.aerie.timeline.ops
 
 import gov.nasa.jpl.aerie.merlin.protocol.types.RealDynamics
 import gov.nasa.jpl.aerie.timeline.*
+import gov.nasa.jpl.aerie.timeline.types.Discrete
+import gov.nasa.jpl.aerie.timeline.types.Real
+import gov.nasa.jpl.aerie.timeline.types.Windows
 import gov.nasa.jpl.aerie.timeline.util.map2Lists
 
 interface ProfileOps<V : Any, P: Any>: TimelineOps<Segment<V>, P> {
