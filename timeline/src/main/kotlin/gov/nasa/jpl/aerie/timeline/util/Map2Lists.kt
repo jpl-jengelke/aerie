@@ -5,7 +5,7 @@ import gov.nasa.jpl.aerie.timeline.Interval
 import gov.nasa.jpl.aerie.timeline.Segment
 import gov.nasa.jpl.aerie.timeline.transpose
 
-fun <Left, Right, Out> map2Lists(
+fun <Left, Right, Out> map2(
     left: List<Segment<Left & Any>>,
     right: List<Segment<Right & Any>>,
     op: BinaryOperation<Left, Right, Out?>

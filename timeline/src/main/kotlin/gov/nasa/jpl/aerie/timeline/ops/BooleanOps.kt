@@ -1,5 +1,5 @@
 package gov.nasa.jpl.aerie.timeline.ops
 
-interface WindowsOps<P: Any>: ProfileOps<Boolean, P> {
+interface BooleanOps<P: Any>: ConstantOps<Boolean, P> {
   fun not() = mapValues { !it.value }
 }
