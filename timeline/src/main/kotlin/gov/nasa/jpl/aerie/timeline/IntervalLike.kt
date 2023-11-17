@@ -1,3 +1,7 @@
 package gov.nasa.jpl.aerie.timeline
 
-interface IntervalLike
+interface IntervalLike<I> {
+  val interval: Interval
+
+  fun bound(bounds: Interval): I?
+}

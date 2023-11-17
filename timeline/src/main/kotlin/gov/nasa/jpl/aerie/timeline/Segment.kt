@@ -1,10 +1,10 @@
 package gov.nasa.jpl.aerie.timeline
 
-data class Segment<V>(val interval: Interval, val value: V): IntervalLike {
+data class Segment<V>(override val interval: Interval, val value: V): IntervalLike<Segment<V>> {
   fun <W> mapValue(f: (Segment<V>) -> W) = Segment(interval, f(this))
   fun mapInterval(f: (Segment<V>) -> Interval) = Segment(f(this), value)
 
-  fun bound(bounds: Interval): Segment<V>? {
+  override fun bound(bounds: Interval): Segment<V>? {
     val intersection = bounds.intersection(this.interval)
     return if (intersection.isEmpty) null
     else Segment(intersection, this.value)

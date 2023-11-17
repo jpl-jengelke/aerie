@@ -11,7 +11,7 @@ data class Interval(
     val end: Duration,
     val startInclusivity: Inclusivity = Inclusivity.Inclusive,
     val endInclusivity: Inclusivity = startInclusivity
-): Comparable<Interval?> {
+): IntervalLike<Interval>, Comparable<Interval?> {
 
   constructor(start: Duration, end: Duration) : this(start, end, Inclusivity.Inclusive, Inclusivity.Inclusive)
 
@@ -21,6 +21,13 @@ data class Interval(
 
     fun opposite(): Inclusivity = if ((this == Inclusive)) Exclusive else Inclusive
     fun moreRestrictiveThan(other: Inclusivity): Boolean = this == Exclusive && other == Inclusive
+  }
+
+  override val interval
+    get() = this
+
+  override fun bound(bounds: Interval): Interval? {
+    TODO("Not yet implemented")
   }
 
   fun includesStart() = startInclusivity == Inclusivity.Inclusive

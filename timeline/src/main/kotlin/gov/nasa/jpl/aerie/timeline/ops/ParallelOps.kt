@@ -1,8 +1,11 @@
 package gov.nasa.jpl.aerie.timeline.ops
 
 import gov.nasa.jpl.aerie.timeline.IntervalLike
+import gov.nasa.jpl.aerie.timeline.Segment
 
-interface ParallelOps<T: IntervalLike, S: Any>: TimelineOps<T, S> {
+interface ParallelOps<T: IntervalLike<T>, S: Any>: TimelineOps<T, S> {
+  fun <V: Any, SInto: Any> mapIntoSegments(ctor: (TimelineOps<Segment<V>, SInto>) -> SInto, f: (T) -> V) =
+      mapInto(ctor) { Segment(it.interval, f(it)) }
   /*
   public flattenIntoProfile<Result>(map: (v: S) => Result, profileType: ProfileType): ProfileSpecialization<Result> {
     const flattenIntoProfileOp = (_: any, [$]: S[][]) => {

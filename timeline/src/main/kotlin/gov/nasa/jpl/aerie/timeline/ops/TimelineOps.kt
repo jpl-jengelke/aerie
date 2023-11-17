@@ -5,7 +5,7 @@ import gov.nasa.jpl.aerie.timeline.IntervalLike
 import gov.nasa.jpl.aerie.timeline.Segment
 import gov.nasa.jpl.aerie.timeline.Timeline
 
-interface TimelineOps<V: IntervalLike, T: Any> {
+interface TimelineOps<V: IntervalLike<V>, T: Any> {
   fun collect(bounds: Interval): List<V>
 
   /** @suppress */
@@ -17,7 +17,7 @@ interface TimelineOps<V: IntervalLike, T: Any> {
    * **UNSAFE**
    */
   fun map(f: (V) -> V) = mapInto(ctor, f)
-  fun <W: IntervalLike, PInto: Any> mapInto(ctor: (TimelineOps<W, PInto>) -> PInto, f: (V) -> W) =
+  fun <W: IntervalLike<W>, TInto: Any> mapInto(ctor: (TimelineOps<W, TInto>) -> TInto, f: (V) -> W) =
       Timeline(ctor) { bounds -> collect(bounds).map { f(it) }}.specialize()
 
   fun filter(f: (V) -> Boolean) = Timeline(ctor) { bounds -> collect(bounds).filter(f) }.specialize()
