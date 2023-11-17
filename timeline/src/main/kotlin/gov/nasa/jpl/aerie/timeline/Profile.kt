@@ -2,30 +2,30 @@ package gov.nasa.jpl.aerie.timeline
 
 import gov.nasa.jpl.aerie.merlin.protocol.types.RealDynamics
 
-sealed interface IntervalMapOps<V : Any, P>: Timeline<Segment<V>> {
-  fun assignGaps(other: IntervalMapOps<V, P>) = other.set(this)
-  fun set(other: IntervalMapOps<V, P>) = map2Values(other, BinaryOperation.combineOrIdentity { _, r, _ -> r })
+sealed interface ProfileOps<V : Any, out P>: Timeline<Segment<V>> {
+  fun assignGaps(other: ProfileOps<V, @UnsafeVariance P>) = other.set(this)
+  fun set(other: ProfileOps<V, @UnsafeVariance P>) = map2Values(other, BinaryOperation.combineOrIdentity { _, r, _ -> r })
 
   fun mapValues(f: (Segment<V>) -> V) = mapValuesInternal(ctor, f)
   fun mapValuesWindows(f: (Segment<V>) -> Boolean) = mapValuesInternal(::Windows, f)
   fun mapValuesReal(f: (Segment<V>) -> RealDynamics) = mapValuesInternal(::Real, f)
   fun <W : Any> mapValuesDiscrete(f: (Segment<V>) -> W) = mapValuesInternal(::Discrete, f)
-  private fun <W : Any, Q> mapValuesInternal(ctor: (IntervalMap<W, Q>) -> Q, f: (Segment<V>) -> W) = IntervalMap(ctor) { bounds -> collect(bounds).map { it.mapValue(f) }}.wrap()
+  private fun <W : Any, Q> mapValuesInternal(ctor: (Profile<W, Q>) -> Q, f: (Segment<V>) -> W) = Profile(ctor) { bounds -> collect(bounds).map { it.mapValue(f) }}.wrap()
 
-  fun <W : Any, Q> map2Values(other: IntervalMapOps<W, Q>, op: BinaryOperation<V, W, V?>) = map2ValuesInternal(ctor, other, op)
-  fun <W : Any, Q> map2ValuesWindows(other: IntervalMapOps<W, Q>, op: BinaryOperation<V, W, Boolean?>) = map2ValuesInternal(::Windows, other, op)
-  fun <W : Any, Q> map2ValuesReal(other: IntervalMapOps<W, Q>, op: BinaryOperation<V, W, RealDynamics?>) = map2ValuesInternal(::Real, other, op)
-  fun <W : Any, Q, Out : Any> map2ValuesDiscrete(other: IntervalMapOps<W, Q>, op: BinaryOperation<V, W, Out?>) = map2ValuesInternal(::Discrete, other, op)
-  private fun <W : Any, Q, Out : Any, R> map2ValuesInternal(ctor: (IntervalMap<Out, R>) -> R, other: IntervalMapOps<W, Q>, op: BinaryOperation<V, W, Out?>) = IntervalMap(ctor) { bounds ->
+  fun <W : Any, Q> map2Values(other: ProfileOps<W, Q>, op: BinaryOperation<V, W, V?>) = map2ValuesInternal(ctor, other, op)
+  fun <W : Any, Q> map2ValuesWindows(other: ProfileOps<W, Q>, op: BinaryOperation<V, W, Boolean?>) = map2ValuesInternal(::Windows, other, op)
+  fun <W : Any, Q> map2ValuesReal(other: ProfileOps<W, Q>, op: BinaryOperation<V, W, RealDynamics?>) = map2ValuesInternal(::Real, other, op)
+  fun <W : Any, Q, Out : Any> map2ValuesDiscrete(other: ProfileOps<W, Q>, op: BinaryOperation<V, W, Out?>) = map2ValuesInternal(::Discrete, other, op)
+  private fun <W : Any, Q, Out : Any, R> map2ValuesInternal(ctor: (Profile<Out, R>) -> R, other: ProfileOps<W, Q>, op: BinaryOperation<V, W, Out?>) = Profile(ctor) { bounds ->
     map2Lists(collect(bounds), other.collect(bounds), op)
   }.wrap()
 
-  fun filter(f: (Segment<V>) -> Boolean) = IntervalMap(ctor) { bounds -> collect(bounds).filter(f) }.wrap()
+  fun filter(f: (Segment<V>) -> Boolean) = Profile(ctor) { bounds -> collect(bounds).filter(f) }.wrap()
 
-  val ctor: (IntervalMap<V, P>) -> P
+  val ctor: (Profile<V, @UnsafeVariance P>) -> P
 }
 
-data class IntervalMap<V : Any, P>(override val ctor: (IntervalMap<V, P>) -> P, private val segments: Timeline<Segment<V>>): IntervalMapOps<V, P>, Timeline<Segment<V>> by segments {
+data class Profile<V : Any, P>(override val ctor: (Profile<V, P>) -> P, private val timeline: Timeline<Segment<V>>): ProfileOps<V, P>, Timeline<Segment<V>> by timeline {
   // because this function is defined here, and not in IntervalMapOps, it won't be available on profile types.
   fun wrap() = ctor(this)
 }
