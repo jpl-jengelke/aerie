@@ -1,8 +1,8 @@
 package gov.nasa.jpl.aerie.timeline
 
-interface DiscreteOps<V: Any, P: Any>: ProfileOps<V, P> {
-  fun all(f: (Segment<V>) -> Boolean, bounds: Interval) = collect(bounds).all(f)
-}
+import gov.nasa.jpl.aerie.timeline.ops.DiscreteOps
+import gov.nasa.jpl.aerie.timeline.ops.ProfileOps
+import gov.nasa.jpl.aerie.timeline.ops.TimelineOps
 
 data class Discrete<V: Any>(private val timeline: TimelineOps<Segment<V>, Discrete<V>>):
     TimelineOps<Segment<V>, Discrete<V>> by timeline,

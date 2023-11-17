@@ -1,6 +1,8 @@
 package gov.nasa.jpl.aerie.timeline
 
 import gov.nasa.jpl.aerie.merlin.protocol.types.RealDynamics
+import gov.nasa.jpl.aerie.timeline.ops.ProfileOps
+import gov.nasa.jpl.aerie.timeline.ops.TimelineOps
 
 data class Real(private val timeline: TimelineOps<Segment<RealDynamics>, Real>):
     TimelineOps<Segment<RealDynamics>, Real> by timeline,

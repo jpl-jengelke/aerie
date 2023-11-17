@@ -1,8 +1,9 @@
 package gov.nasa.jpl.aerie.timeline
 
-interface WindowsOps<P: Any>: ProfileOps<Boolean, P> {
-  fun not() = mapValues { !it.value }
-}
+import gov.nasa.jpl.aerie.timeline.ops.DiscreteOps
+import gov.nasa.jpl.aerie.timeline.ops.ProfileOps
+import gov.nasa.jpl.aerie.timeline.ops.TimelineOps
+import gov.nasa.jpl.aerie.timeline.ops.WindowsOps
 
 data class Windows(private val timeline: TimelineOps<Segment<Boolean>, Windows>):
     TimelineOps<Segment<Boolean>, Windows> by timeline,

@@ -1,7 +1,5 @@
 package gov.nasa.jpl.aerie.timeline
 
-class BinaryOperationBothNullException : Exception("Both arguments to binary operation were null.")
-
 fun interface BinaryOperation<in Left, in Right, out Out> {
   operator fun invoke(l: Left?, r: Right?, i: Interval): Out
 
@@ -38,4 +36,6 @@ fun interface BinaryOperation<in Left, in Right, out Out> {
       else acc ?: throw BinaryOperationBothNullException()
     }
   }
+
+  class BinaryOperationBothNullException: Exception("Both arguments to binary operation were null.")
 }
