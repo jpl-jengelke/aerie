@@ -2,19 +2,16 @@ package gov.nasa.jpl.aerie.merlin.driver.timeline;
 
 import gov.nasa.jpl.aerie.merlin.protocol.types.Duration;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
-public final class LiveCells {
-  // INVARIANT: Every Query<T> maps to a LiveCell<T>; that is, the type parameters are correlated.
-  private final Map<Query<?>, LiveCell<?>> cells = new HashMap<>();
+// INVARIANT: Every Query<T> maps to a LiveCell<T>; that is, the type parameters are correlated.
+public abstract class LiveCells {
+
   private final EventSource source;
   private final LiveCells parent;
 
   public LiveCells(final EventSource source) {
-    this.source = source;
-    this.parent = null;
+    this(source, null);
   }
 
   public LiveCells(final EventSource source, final LiveCells parent) {
@@ -31,16 +28,13 @@ public final class LiveCells {
   }
 
   public <State> void put(final Query<State> query, final Cell<State> cell) {
-    // SAFETY: The query and cell share the same State type parameter.
-    this.cells.put(query, new LiveCell<>(cell, this.source.cursor()));
+    write(query, new LiveCell<>(cell, this.source.cursor()));
   }
 
   private <State> Optional<Cell<State>> getCell(final Query<State> query) {
     // First, check if we have this cell already.
     {
-      // SAFETY: By the invariant, if there is an entry for this query, it is of type Cell<State>.
-      @SuppressWarnings("unchecked")
-      final var cell = (LiveCell<State>) this.cells.get(query);
+      final var cell = read(query);
 
       if (cell != null) return Optional.of(cell.get());
     }
@@ -53,8 +47,12 @@ public final class LiveCells {
     final var cell = new LiveCell<>(cell$.get().duplicate(), this.source.cursor());
 
     // SAFETY: The query and cell share the same State type parameter.
-    this.cells.put(query, cell);
+    write(query, cell);
 
     return Optional.of(cell.get());
   }
+
+  protected abstract <State> void write(final Query<State> query, final LiveCell<State> cell);
+
+  protected abstract <State> LiveCell<State> read(Query<State> query);
 }

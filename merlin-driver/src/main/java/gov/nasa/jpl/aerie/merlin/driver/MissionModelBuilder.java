@@ -4,6 +4,8 @@ import gov.nasa.jpl.aerie.merlin.driver.engine.EngineCellId;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.CausalEventSource;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.Cell;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.LiveCells;
+import gov.nasa.jpl.aerie.merlin.driver.timeline.DenseLiveCells;
+import gov.nasa.jpl.aerie.merlin.driver.timeline.SparseLiveCells;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.Query;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.RecursiveEventGraphEvaluator;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.Selector;
@@ -23,6 +25,10 @@ import java.util.function.Function;
 
 public final class MissionModelBuilder implements Initializer {
   private MissionModelBuilderState state = new UnbuiltState();
+
+  public MissionModelBuilder() {
+    Query.nextAddress = 0;
+  }
 
   @Override
   public <State> State getInitialState(
@@ -74,7 +80,7 @@ public final class MissionModelBuilder implements Initializer {
   }
 
   private final class UnbuiltState implements MissionModelBuilderState {
-    private final LiveCells initialCells = new LiveCells(new CausalEventSource());
+    private final LiveCells initialCells = new DenseLiveCells(new CausalEventSource());
 
     private final Map<String, Resource<?>> resources = new HashMap<>();
     private final List<TaskFactory<?>> daemons = new ArrayList<>();

@@ -4,6 +4,7 @@ import gov.nasa.jpl.aerie.merlin.driver.timeline.CausalEventSource;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.Event;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.EventGraph;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.LiveCells;
+import gov.nasa.jpl.aerie.merlin.driver.timeline.SparseLiveCells;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.Query;
 import gov.nasa.jpl.aerie.merlin.protocol.types.Duration;
 
@@ -31,7 +32,7 @@ public final class TaskFrame<Job> {
 
   private TaskFrame(final LiveCells context) {
     this.previousCells = context;
-    this.cells = new LiveCells(this.tip, this.previousCells);
+    this.cells = new SparseLiveCells(this.tip, this.previousCells);
   }
 
   // Perform a job, then recursively perform any jobs it spawned.
@@ -78,7 +79,7 @@ public final class TaskFrame<Job> {
 
       this.tip = new CausalEventSource();
       this.previousCells = this.cells;
-      this.cells = new LiveCells(this.tip, this.previousCells);
+      this.cells = new SparseLiveCells(this.tip, this.previousCells);
     }
   }
 }

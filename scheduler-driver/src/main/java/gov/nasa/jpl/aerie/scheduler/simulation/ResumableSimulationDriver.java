@@ -10,6 +10,7 @@ import gov.nasa.jpl.aerie.merlin.driver.engine.JobSchedule;
 import gov.nasa.jpl.aerie.merlin.driver.engine.SimulationEngine;
 import gov.nasa.jpl.aerie.merlin.driver.engine.TaskId;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.LiveCells;
+import gov.nasa.jpl.aerie.merlin.driver.timeline.SparseLiveCells;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.TemporalEventSource;
 import gov.nasa.jpl.aerie.merlin.protocol.driver.Topic;
 import gov.nasa.jpl.aerie.merlin.protocol.model.TaskFactory;
@@ -104,7 +105,7 @@ public class ResumableSimulationDriver<Model> implements AutoCloseable {
     batch = null;
     /* The top-level simulation timeline. */
     this.timeline = new TemporalEventSource();
-    this.cells = new LiveCells(timeline, missionModel.getInitialCells());
+    this.cells = new SparseLiveCells(timeline, missionModel.getInitialCells());
     curTime = Duration.MIN_VALUE;
 
     // Begin tracking all resources.

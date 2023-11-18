@@ -1,8 +1,10 @@
 package gov.nasa.jpl.aerie.merlin.driver;
 
 import gov.nasa.jpl.aerie.merlin.driver.engine.SimulationEngine;
-import gov.nasa.jpl.aerie.merlin.driver.timeline.LiveCells;
+import gov.nasa.jpl.aerie.merlin.driver.timeline.SparseLiveCells;
+import gov.nasa.jpl.aerie.merlin.driver.timeline.DenseLiveCells;
 import gov.nasa.jpl.aerie.merlin.driver.timeline.TemporalEventSource;
+import gov.nasa.jpl.aerie.merlin.driver.timeline.Query;
 import gov.nasa.jpl.aerie.merlin.protocol.driver.Topic;
 import gov.nasa.jpl.aerie.merlin.protocol.model.TaskFactory;
 import gov.nasa.jpl.aerie.merlin.protocol.types.Duration;
@@ -57,7 +59,7 @@ public final class SimulationDriver {
     try (final var engine = new SimulationEngine()) {
       /* The top-level simulation timeline. */
       var timeline = new TemporalEventSource();
-      var cells = new LiveCells(timeline, missionModel.getInitialCells());
+      var cells = new DenseLiveCells(timeline, missionModel.getInitialCells());
       /* The current real time. */
       var elapsedTime = Duration.ZERO;
 
@@ -142,21 +144,23 @@ public final class SimulationDriver {
 
       final long now = System.nanoTime();
 
-      final double thresholdSeconds = 0.1;
       final var resourceStats = engine.resourceUpdateStats.entrySet();
-      final var hotResourceStats = resourceStats.stream()
-        .filter(e -> e.getValue().totalSeconds >= thresholdSeconds)
-        .sorted((a, b) -> Double.compare(b.getValue().totalSeconds, a.getValue().totalSeconds))
-        .toList();
-      final double totSec = resourceStats.stream().mapToDouble(e -> e.getValue().totalSeconds).sum();
-      final double hotSec = hotResourceStats.stream().mapToDouble(e -> e.getValue().totalSeconds).sum();
-      logger.debug("Total {}s updating {} resources, {}s for hot {} (at least {}s each), {}s for remaining {}",
-                   totSec, resourceStats.size(), hotSec, hotResourceStats.size(), thresholdSeconds,
-                   totSec - hotSec, resourceStats.size() - hotResourceStats.size());
-      for (final var stats : hotResourceStats) {
-        logger.debug("Hot resource {}: {} updates, {}s total time, {}s average per update",
-                     stats.getKey().id(), stats.getValue().totalUpdates, stats.getValue().totalSeconds,
-                     stats.getValue().totalSeconds / stats.getValue().totalUpdates);
+      if (!resourceStats.isEmpty()) {
+        final double thresholdSeconds = 0.1;
+        final var hotResourceStats = resourceStats.stream()
+          .filter(e -> e.getValue().totalSeconds >= thresholdSeconds)
+          .sorted((a, b) -> Double.compare(b.getValue().totalSeconds, a.getValue().totalSeconds))
+          .toList();
+        final double totSec = resourceStats.stream().mapToDouble(e -> e.getValue().totalSeconds).sum();
+        final double hotSec = hotResourceStats.stream().mapToDouble(e -> e.getValue().totalSeconds).sum();
+        logger.debug("Total {}s updating {} resources, {}s for hot {} (at least {}s each), {}s for remaining {}",
+                     totSec, resourceStats.size(), hotSec, hotResourceStats.size(), thresholdSeconds,
+                     totSec - hotSec, resourceStats.size() - hotResourceStats.size());
+        for (final var stats : hotResourceStats) {
+          logger.debug("Hot resource {}: {} updates, {}s total time, {}s average per update",
+                       stats.getKey().id(), stats.getValue().totalUpdates, stats.getValue().totalSeconds,
+                       stats.getValue().totalSeconds / stats.getValue().totalUpdates);
+        }
       }
 
       logger.info("Finished simulation of {} activity directives, " +
@@ -174,7 +178,7 @@ public final class SimulationDriver {
     try (final var engine = new SimulationEngine()) {
       /* The top-level simulation timeline. */
       var timeline = new TemporalEventSource();
-      var cells = new LiveCells(timeline, missionModel.getInitialCells());
+      var cells = new DenseLiveCells(timeline, missionModel.getInitialCells());
       /* The current real time. */
       var elapsedTime = Duration.ZERO;
 
