@@ -15,45 +15,79 @@ import java.util.Objects;
  * and the chain of links allows for cheap extension when a slab reaches capacity.
  */
 public final class SlabList<T> implements Iterable<T> {
+
   /** ~4 KiB of elements (or at least, references thereof). */
   private static final int SLAB_SIZE = 1024;
 
   private final Slab<T> head = new Slab<>();
 
   /*derived*/
-  private Slab<T> tail = this.head;
+  private Slab<T> tail = head;
+
   /*derived*/
   private int size = 0;
 
   public void append(final T element) {
-    this.tail.elements().add(element);
-    this.size += 1;
-
-    if (this.size % SLAB_SIZE == 0) {
-      this.tail.next().setValue(new Slab<>());
-      this.tail = this.tail.next().getValue();
+    if (tail.numElements == SLAB_SIZE) {
+      tail = tail.next = new Slab<>();
     }
+    tail.elements[tail.numElements++] = element;
+    size++;
   }
 
   public int size() {
-    return this.size;
+    return size;
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (!(o instanceof SlabList<?> other)) return false;
-
-    return Objects.equals(this.head, other.head);
+    if (o instanceof SlabList<?> other) {
+      if (size != other.size) {
+        return false;
+      }
+      final var oit = other.iterator();
+      for (final var it = iterator(); it.hasNext(); ) {
+        Object e = it.next();
+        Object oe = oit.next();
+        if (e == null) {
+          if (oe != null) {
+            return false;
+          }
+        } else {
+          if (!e.equals(oe)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.head);
+    int hash = 17;
+    for (final var it = iterator(); it.hasNext(); ) {
+      T e = it.next();
+      hash = hash * 31 + (e != null ? e.hashCode() : 0);
+    }
+    return hash;
   }
 
   @Override
   public String toString() {
-    return SlabList.class.getSimpleName() + "[" + this.head + ']';
+    final var sb = new StringBuilder();
+    sb.append(SlabList.class.getSimpleName());
+    sb.append("[");
+    final var it = iterator();
+    for (int i = 0; i < size; i++) {
+      sb.append(it.next().toString());
+      if (i < size - 1) {
+        sb.append(",");
+      }
+    }
+    sb.append("]");
+    return sb.toString();
   }
 
   /**
@@ -68,6 +102,7 @@ public final class SlabList<T> implements Iterable<T> {
   }
 
   public final class SlabIterator implements Iterator<T> {
+
     private Slab<T> slab = SlabList.this.head;
     private int index = 0;
 
@@ -75,28 +110,27 @@ public final class SlabList<T> implements Iterable<T> {
 
     @Override
     public boolean hasNext() {
-      if (this.index < this.slab.elements().size()) return true;
-
-      final var nextSlab = this.slab.next().getValue();
-      if (nextSlab == null || nextSlab.elements().isEmpty()) return false;
-
-      this.index -= this.slab.elements().size();
-      this.slab = nextSlab;
-
-      return true;
+      return index < slab.numElements || slab.next != null;
     }
 
     @Override
     public T next() {
       if (!hasNext()) throw new NoSuchElementException();
-
-      return this.slab.elements().get(this.index++);
+      if (index == SLAB_SIZE) {
+        slab = slab.next;
+        index = 0;
+      }
+      return slab.elements[index++];
     }
   }
 
-  record Slab<T>(ArrayList<T> elements, Mutable<Slab<T>> next) {
+  private class Slab<T> {
+    public final T[] elements;
+    public int numElements;
+    public Slab<T> next;
+    @SuppressWarnings("unchecked")
     public Slab() {
-      this(new ArrayList<>(SLAB_SIZE), new MutableObject<>(null));
+      elements = (T[])(new Object[SLAB_SIZE]);
     }
   }
 }
