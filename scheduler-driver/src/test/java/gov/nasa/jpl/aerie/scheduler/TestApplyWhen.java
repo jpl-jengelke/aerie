@@ -1,6 +1,10 @@
 package gov.nasa.jpl.aerie.scheduler;
 
-import gov.nasa.jpl.aerie.banananation.activities.GrowBananaActivity;
+import gov.nasa.jpl.aerie.constraints.model.EvaluationEnvironment;
+import gov.nasa.jpl.aerie.constraints.model.SimulationResults;
+import gov.nasa.jpl.aerie.constraints.model.LinearEquation;
+import gov.nasa.jpl.aerie.constraints.model.LinearProfile;
+import gov.nasa.jpl.aerie.constraints.model.DiscreteProfile;
 import gov.nasa.jpl.aerie.constraints.time.Interval;
 import gov.nasa.jpl.aerie.constraints.time.Segment;
 import gov.nasa.jpl.aerie.constraints.time.Spans;
@@ -1202,7 +1206,7 @@ public class TestApplyWhen {
     problem.setInitialPlan(partialPlan);
     //want to create another activity for each of the already present activities
     //  foreach with activityexpression
-    ActivityExpression framework = new ActivityCreationTemplate.Builder()
+    ActivityExpression framework = new ActivityExpression.Builder()
         .ofType(actTypeA)
         .build();
 
@@ -1210,12 +1214,14 @@ public class TestApplyWhen {
     CoexistenceGoal goal = new CoexistenceGoal.Builder()
         .forAllTimeIn(new WindowsWrapperExpression(new Windows(false).set(period, true)))
         .forEach(framework)
-        .thereExistsOne(new ActivityCreationTemplate.Builder()
+        .thereExistsOne(new ActivityExpression.Builder()
                             .ofType(actTypeB)
                             .withArgument("quantity", SerializedValue.of(1))
                             .build())
         .startsAt(TimeAnchor.START)
         .aliasForAnchors("Grow and Pick Bananas")
+        .createPersistentAnchor(true)
+        .allowActivityUpdate(true)
         .withinPlanHorizon(planningHorizon)
         .build();
 
