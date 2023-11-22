@@ -238,7 +238,7 @@ public record SynchronousSchedulerAgent(
             schedulerMissionModel.schedulerModel()
         );
         List<SchedulingActivityDirective> updatedActs = updateAnchorIds(solutionPlan, instancesToIds);
-        merlinService.updatePlanActivityDirectiveAnchors(updatedActs);
+        merlinService.updatePlanActivityDirectiveAnchors(specification.planId(), updatedActs);
 
         final var planMetadataAfterChanges = merlinService.getPlanMetadata(specification.planId());
         final var datasetId = storeSimulationResults(planningHorizon, simulationFacade, planMetadataAfterChanges, instancesToIds);
